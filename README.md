@@ -9,6 +9,6 @@
 ## Recording
 
 <video width="1232" height="886" controls>
-  <source src="https://raw.githubusercontent.com/aleskalfas/bee-deep-researcher-reproduction/blob/main/media/video.mp4" type="video/mp4">
+  <source src="[https://raw.githubusercontent.com/aleskalfas/bee-deep-researcher-reproduction/blob/main/media/video.mp4](https://github.com/aleskalfas/bee-deep-researcher-reproduction/raw/refs/heads/main/media/recording.mp4)" type="video/mp4">
   Your browser does not support the video tag.
 </video>
