@@ -17,6 +17,30 @@ This workflow helps streamline competitive research by:
 2. It will then run through the workflow steps, providing logs and insights along the way.
 3. Upon completion, it will output the final competitive analysis.
 
+## Visual
+
+```mermaid
+graph TD
+    A[Start: Generate Competitors] --> B[Select Competitor]
+    B --> C[Web Research]
+    C --> D[Categorize Findings]
+    D --> E[Finalize Summary]
+    E --> F[End]
+
+    A -.->|Competitors found| B
+    B -.->|Competitor selected| C
+    C -.->|Research completed| D
+    D -.->|Findings categorized| E
+    E -.->|Summary generated| F
+
+    style A fill:#f9f,stroke:#333,stroke-width:4px
+    style B fill:#bbf,stroke:#333,stroke-width:2px
+    style C fill:#bfb,stroke:#333,stroke-width:2px
+    style D fill:#ffb,stroke:#333,stroke-width:2px
+    style E fill:#bff,stroke:#333,stroke-width:2px
+    style F fill:#fbb,stroke:#333,stroke-width:4px
+```
+
 ## Video demo
 
 https://github.com/user-attachments/assets/52416798-a97a-4b76-80ac-9102816f70c9
