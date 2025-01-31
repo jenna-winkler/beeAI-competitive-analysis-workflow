@@ -8,6 +8,4 @@ This is a reproduction of the original [Ollama Deep Researcher](https://github.c
 
 ## Recording
 
-
 https://github.com/user-attachments/assets/32cd06f3-0739-48ca-8d79-c3233068fca6
-

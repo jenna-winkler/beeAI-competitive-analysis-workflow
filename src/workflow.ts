@@ -1,162 +1,156 @@
 import { Workflow } from "bee-agent-framework/experimental/workflows/workflow";
 import { JsonDriver } from "bee-agent-framework/llms/drivers/json";
 import { BaseMessage, Role } from "bee-agent-framework/llms/primitives/message";
-import "dotenv/config.js";
 import { getChatLLM } from "./helpers/llm.js";
-import { MAX_WEB_RESEARCH_LOOPS } from "./main.js";
 import {
-  getHumanMessageContent,
-  queryWriterInstructionsTemplate,
-  reflectionOutputSchema,
-  reflectionPromptTemplate,
-  summarizerInstructions,
+  competitorsPromptTemplate,
+  competitorsSchema,
+  categorizationPromptTemplate,
+  findingsSchema,
 } from "./prompts.js";
-import { searchQuerySchema, State, StateSchema } from "./state.js";
-import {
-  deduplicateAndFormatSources,
-  formatSources,
-  removeThinkTags,
-  tavilySearch,
-} from "./utils.js";
+import { State, StateSchema } from "./state.js";
+import { deduplicateAndFormatSources, formatSources, tavilySearch } from "./utils.js";
 
-/**
- * Generate a query for web search
- * @param state
- * @returns
- */
-async function generateQuery(state: State) {
-  const queryWriterInstructionsPrompt = queryWriterInstructionsTemplate.render({
-    researchTopic: state.researchTopic,
-  });
+export enum Steps {
+  GENERATE_COMPETITORS = "GENERATE_COMPETITORS",
+  SELECT_COMPETITOR = "SELECT_COMPETITOR",
+  WEB_RESEARCH = "WEB_RESEARCH",
+  CATEGORIZE_FINDINGS = "CATEGORIZE_FINDINGS",
+  FINALIZE_SUMMARY = "FINALIZE_SUMMARY",
+}
+
+async function generateCompetitors(state: State) {
+  if (state.specifiedCompetitors?.length) {
+    return {
+      update: {
+        competitors: state.specifiedCompetitors,
+        runningSummary: `Competitive analysis of ${state.specifiedCompetitors.join(", ")}`,
+        competitorFindings: state.specifiedCompetitors.reduce(
+          (acc, competitor) => {
+            acc[competitor] = [];
+            return acc;
+          },
+          {} as Record<string, string[]>,
+        ),
+      },
+    };
+  }
 
   const llm = getChatLLM();
   const llmJsonMode = new JsonDriver(llm);
-  const result = await llmJsonMode.generate(searchQuerySchema, [
+  const result = await llmJsonMode.generate(competitorsSchema, [
     BaseMessage.of({
       role: Role.SYSTEM,
-      text: queryWriterInstructionsPrompt,
-    }),
-    BaseMessage.of({
-      role: Role.USER,
-      text: `Generate a query for web search:`,
+      text: competitorsPromptTemplate.render({
+        industry: state.industry,
+        specifiedCompetitors: undefined,
+      }),
     }),
   ]);
 
-  return { update: { searchQuery: result.parsed.query } };
+  return {
+    update: {
+      competitors: result.parsed.competitors,
+      runningSummary: result.parsed.overview,
+      competitorFindings: result.parsed.competitors.reduce(
+        (acc, competitor) => {
+          acc[competitor] = [];
+          return acc;
+        },
+        {} as Record<string, string[]>,
+      ),
+    },
+  };
 }
 
-/**
- * Gather information from the web
- * @param state
- * @returns
- */
+async function selectCompetitor(state: State) {
+  const unprocessedCompetitors = state.competitors.filter(
+    (comp) => !state.competitorFindings[comp] || state.competitorFindings[comp].length === 0,
+  );
+
+  if (unprocessedCompetitors.length === 0) {
+    return { next: Steps.FINALIZE_SUMMARY };
+  }
+
+  const currentCompetitor = unprocessedCompetitors[0];
+  const searchTerms = `${currentCompetitor} comprehensive overview key capabilities`;
+
+  return {
+    update: {
+      currentCompetitor,
+      searchQuery: searchTerms,
+    },
+    next: Steps.WEB_RESEARCH,
+  };
+}
+
 async function webResearch(state: State) {
-  // const searchResults = await duckDuckGoSearchTool.run({ query: state.searchQuery });
   const searchResults = await tavilySearch(state.searchQuery);
   const searchResultsString = deduplicateAndFormatSources(searchResults, 1000, true);
 
   return {
     update: {
-      sourcesGathered: [...state.sourcesGathered.slice(), formatSources(searchResults)],
+      sourcesGathered: [...state.sourcesGathered, formatSources(searchResults)],
       researchLoopCount: state.researchLoopCount + 1,
-      webResearchResults: [...state.webResearchResults.slice(), searchResultsString],
+      webResearchResults: [...state.webResearchResults, searchResultsString],
     },
   };
 }
 
-/**
- * Summarize the gathered sources
- * @param state
- * @returns
- */
-async function summarizeSources(state: State) {
-  // Existing summary
-  const existingSummary = state.runningSummary;
-
-  // Most recent web research
-  const mostRecentWebResearch = state.webResearchResults.at(-1);
-
-  const humanMessageContent = getHumanMessageContent({
-    existingSummary,
-    mostRecentWebResearch,
-    researchTopic: state.researchTopic,
-  });
-
-  const llm = getChatLLM();
-  const result = await llm.generate([
-    BaseMessage.of({
-      role: Role.SYSTEM,
-      text: summarizerInstructions,
-    }),
-    BaseMessage.of({
-      role: Role.USER,
-      text: humanMessageContent,
-    }),
-  ]);
-
-  const summary = removeThinkTags(result.getTextContent());
-
-  return {
-    update: {
-      runningSummary: summary,
-    },
-  };
-}
-
-/**
- * Reflect on the summary and generate a follow-up query
- * @param state
- * @returns
- */
-async function reflectOnSummary(state: State) {
+async function categorizeFindings(state: State) {
   const llm = getChatLLM();
   const llmJsonMode = new JsonDriver(llm);
-  const result = await llmJsonMode.generate(reflectionOutputSchema, [
+  const result = await llmJsonMode.generate(findingsSchema, [
     BaseMessage.of({
       role: Role.SYSTEM,
-      text: reflectionPromptTemplate.render({ researchTopic: state.researchTopic }),
-    }),
-    BaseMessage.of({
-      role: Role.USER,
-      text: `Identify a knowledge gap and generate a follow-up web search query based on our existing knowledge: ${state.runningSummary}"`,
+      text: categorizationPromptTemplate.render({
+        competitor: state.currentCompetitor!,
+        searchResults: state.webResearchResults.at(-1)!,
+      }),
     }),
   ]);
 
-  // Update search query with follow-up query
   return {
     update: {
-      searchQuery: result.parsed.followUpQuery ?? `Tell me more about ${state.researchTopic}`,
+      competitorFindings: {
+        ...state.competitorFindings,
+        [state.currentCompetitor!]: [
+          ...(result.parsed.key_insights || []),
+          ...(result.parsed.unique_capabilities || []),
+        ],
+      },
     },
-    next: state.researchLoopCount <= MAX_WEB_RESEARCH_LOOPS ? Steps.WEB_RESEARCH : Workflow.NEXT,
+    next: Steps.SELECT_COMPETITOR,
   };
 }
 
-/**
- * Finalize the summary
- * @param state
- * @returns
- */
 async function finalizeSummary(state: State) {
-  const allSources = state.sourcesGathered.join("\n");
-  const updatedSummary = `## Summary\n${state.runningSummary}\n\n### Sources:\n${allSources}`;
+  const competitorSections = Object.entries(state.competitorFindings)
+    .map(
+      ([competitor, findings]) => `## ${competitor}
+${findings.map((insight) => `* ${insight}`).join("\n")}`,
+    )
+    .join("\n\n");
+
+  const finalSummary = `# Competitive Analysis: ${state.industry}
+
+${state.runningSummary || "Comprehensive Competitive Landscape Overview"}
+
+${competitorSections}
+
+### Sources
+${state.sourcesGathered.join("\n")}`;
+
   return {
-    update: { answer: BaseMessage.of({ role: Role.ASSISTANT, text: updatedSummary }) },
+    update: { answer: BaseMessage.of({ role: Role.ASSISTANT, text: finalSummary }) },
     next: Workflow.END,
   };
 }
 
-export enum Steps {
-  GENERATE_QUERY = "GENERATE_QUERY",
-  WEB_RESEARCH = "WEB_RESEARCH",
-  SUMMARIZE_SOURCES = "SUMMARIZE_SOURCES",
-  REFLECT_ON_SUMMARY = "REFLECT_ON_SUMMARY",
-  FINALIZE_SUMMARY = "FINALIZE_SUMMARY",
-}
-
 export const workflow = new Workflow({ schema: StateSchema })
-  .addStep(Steps.GENERATE_QUERY, generateQuery)
+  .addStep(Steps.GENERATE_COMPETITORS, generateCompetitors)
+  .addStep(Steps.SELECT_COMPETITOR, selectCompetitor)
   .addStep(Steps.WEB_RESEARCH, webResearch)
-  .addStep(Steps.SUMMARIZE_SOURCES, summarizeSources)
-  .addStep(Steps.REFLECT_ON_SUMMARY, reflectOnSummary)
+  .addStep(Steps.CATEGORIZE_FINDINGS, categorizeFindings)
   .addStep(Steps.FINALIZE_SUMMARY, finalizeSummary)
-  .setStart(Steps.GENERATE_QUERY);
+  .setStart(Steps.GENERATE_COMPETITORS);
