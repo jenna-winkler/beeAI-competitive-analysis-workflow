@@ -17,6 +17,10 @@ This workflow helps streamline competitive research by:
 2. It will then run through the workflow steps, providing logs and insights along the way.
 3. Upon completion, it will output the final competitive analysis.
 
+## Video demo
+
+https://github.com/user-attachments/assets/52416798-a97a-4b76-80ac-9102816f70c9
+
 ## Example Input & Output
 
 ### Input
