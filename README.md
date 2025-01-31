@@ -8,7 +8,4 @@ This is a reproduction of the original [Ollama Deep Researcher](https://github.c
 
 ## Recording
 
-<video width="1232" height="886" controls>
-  <source src="https://raw.githubusercontent.com/aleskalfas/bee-deep-researcher-reproduction/refs/heads/main/media/recording.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+<video src="https://raw.githubusercontent.com/aleskalfas/bee-deep-researcher-reproduction/refs/heads/main/media/recording.mp4" controls></video>
