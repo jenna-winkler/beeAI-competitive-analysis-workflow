@@ -1,6 +1,6 @@
 # 🐝 Bee Deep Researcher reproduction
 
-Reproduction of the original Langchain [Ollama Deep Researcher](https://github.com/langchain-ai/ollama-deep-researcher/blob/main/README.md) all credits go there 🙏👏.
+[Bee-like](https://i-am-bee.github.io/bee-agent-framework/#/) Reproduction of the original Langchain [Ollama Deep Researcher](https://github.com/langchain-ai/ollama-deep-researcher/blob/main/README.md) all credits go there 🙏👏.
 
 ## Run
 
