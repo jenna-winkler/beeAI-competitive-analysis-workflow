@@ -8,4 +8,4 @@ This is a reproduction of the original [Ollama Deep Researcher](https://github.c
 
 ## Recording
 
-<video src="https://github.com/aleskalfas/bee-deep-researcher-reproduction/blob/b7381a39b27fa73bc45619e0c978f7e3b4e2d0e9/media/recording.mp4" controls></video>
+https://github.com/aleskalfas/bee-deep-researcher-reproduction/raw/b7381a39b27fa73bc45619e0c978f7e3b4e2d0e9/media/recording.mp4
