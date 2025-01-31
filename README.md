@@ -21,11 +21,8 @@ This workflow helps streamline competitive research by:
 
 ### Input
 
-```json
-{
-  "industry": "Open Source AI Agent Frameworks",
-  "specifiedCompetitors": ["CrewAI", "LangChain", "AutoGen"]
-}
+```
+npm start <<< '{"industry": "Open Source AI Agent Frameworks", "specifiedCompetitors": ["CrewAI", "Relevance AI", "LangGraph", "AutoGen", "OpenAI"]}'
 ```
 
 ### Output
