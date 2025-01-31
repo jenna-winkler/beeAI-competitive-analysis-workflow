@@ -6,8 +6,9 @@ Reproduction of the original Langchain [Ollama Deep Researcher](https://github.c
 
 `npm start <<< "How does the PPO RL algorithm work?"`
 
-[media/recording.mp4](https://github.com/aleskalfas/bee-deep-researcher-reproduction/blob/main/media/recording.mp4)
-
 ## Recording
-<video src="https://github.com/aleskalfas/bee-deep-researcher-reproduction/blob/main/media/recording.mp4" controls="controls" style="max-width: 1000px;">
+
+<video width="1232" height="886" controls>
+  <source src="https://raw.githubusercontent.com/aleskalfas/bee-deep-researcher-reproduction/blob/main/media/video.mp4" type="video/mp4">
+  Your browser does not support the video tag.
 </video>
