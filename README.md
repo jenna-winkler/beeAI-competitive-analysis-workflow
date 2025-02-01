@@ -20,25 +20,23 @@ This workflow helps streamline competitive research by:
 ## Visual
 
 ```mermaid
-graph TD
-    A[Start: Generate Competitors] --> B[Select Competitor]
-    B --> C[Web Research]
-    C --> D[Categorize Findings]
-    D --> E[Finalize Summary]
-    E --> F[End]
+stateDiagram-v2
+    [*] --> GENERATE_COMPETITORS
+    GENERATE_COMPETITORS --> SELECT_COMPETITOR
+    
+    SELECT_COMPETITOR --> WEB_RESEARCH: More competitors
+    SELECT_COMPETITOR --> FINALIZE_SUMMARY: All done
+    
+    WEB_RESEARCH --> CATEGORIZE_FINDINGS
+    CATEGORIZE_FINDINGS --> SELECT_COMPETITOR
+    
+    FINALIZE_SUMMARY --> [*]
 
-    A -.->|Competitors found| B
-    B -.->|Competitor selected| C
-    C -.->|Research completed| D
-    D -.->|Findings categorized| E
-    E -.->|Summary generated| F
-
-    style A fill:#f9f,stroke:#333,stroke-width:4px
-    style B fill:#bbf,stroke:#333,stroke-width:2px
-    style C fill:#bfb,stroke:#333,stroke-width:2px
-    style D fill:#ffb,stroke:#333,stroke-width:2px
-    style E fill:#bff,stroke:#333,stroke-width:2px
-    style F fill:#fbb,stroke:#333,stroke-width:4px
+    note right of GENERATE_COMPETITORS: Get list of competitors
+    note right of SELECT_COMPETITOR: Pick next competitor
+    note right of WEB_RESEARCH: Search competitor info
+    note right of CATEGORIZE_FINDINGS: Extract key insights
+    note right of FINALIZE_SUMMARY: Create final report
 ```
 
 ## Video demo
