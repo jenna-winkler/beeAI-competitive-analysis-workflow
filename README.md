@@ -35,7 +35,7 @@ stateDiagram-v2
 
 1. Clone the Repository
 ```
-git clone https://github.com/yourusername/competitive-analysis-workflow.git`
+git clone https://github.com/jenna-winkler/beeAI-competitive-analysis-workflow`
 cd competitive-analysis-workflow
 ```
 2. Install Dependencies
