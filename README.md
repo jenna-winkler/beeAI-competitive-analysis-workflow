@@ -1,6 +1,6 @@
 # Competitive Analysis Workflow
 
-This repository contains a Competitive Analysis Workflow built with the BeeAI Framework. It automates the process of gathering competitor data, conducting web research, categorizing insights, and generating a detailed competitive analysis report.
+A workflow built with the BeeAI Framework that automates competitor research and generates market analysis reports. It helps identify competitors, gather data, analyze findings, and create detailed summaries.
 
 ## Workflow Overview
 
@@ -10,14 +10,6 @@ This workflow helps streamline competitive research by:
 3. Conducting Web Research: Uses the Tavily API to gather relevant data about each competitor.
 4. Categorizing Findings: Analyzes the data and categorizes the key insights.
 5. Generating a Final Report: Compiles all findings into a markdown-based summary.
-
-## How to Use
-
-1. The script will prompt you to enter an industry or a list of competitors.
-2. It will then run through the workflow steps, providing logs and insights along the way.
-3. Upon completion, it will output the final competitive analysis.
-
-## Visual
 
 ```mermaid
 stateDiagram-v2
@@ -39,19 +31,40 @@ stateDiagram-v2
     note right of FINALIZE_SUMMARY: Create final report
 ```
 
-## Video demo
+## How to Use
 
-https://github.com/user-attachments/assets/52416798-a97a-4b76-80ac-9102816f70c9
-
-## Example Input & Output
-
-### Input
-
+1. Clone the Repository
 ```
+git clone https://github.com/yourusername/competitive-analysis-workflow.git`
+cd competitive-analysis-workflow
+```
+2. Install Dependencies
+```
+npm install
+```
+4. Set Up Environment Variables
+```
+# Copy the example environment file
+cp .env.example .env
+
+# Edit the .env file and add your Tavily API key
+# Get your API key from https://tavily.com
+TAVILY_API_KEY=your-api-key-here
+```
+4. Run the Workflow with a direct JSON input
+```
+# Analyze a specific industry
+npm start <<< '{"industry": "Electric Vehicles"}'
+
+# Analyze specific competitors
 npm start <<< '{"industry": "Open Source AI Agent Frameworks", "specifiedCompetitors": ["CrewAI", "Relevance AI", "LangGraph", "AutoGen", "OpenAI"]}'
 ```
 
-### Output
+5. It will then run through the workflow steps, providing logs and insights along the way.
+
+6. Upon completion, it will output the final competitive analysis.
+   
+Example Output
 
 ```markdown
 === Final Analysis ===
@@ -114,3 +127,7 @@ Competitive analysis of CrewAI, Relevance AI, LangGraph, AutoGen, OpenAI
 * OpenAI: A comprehensive overview and guide - Educative : https://www.educative.io/answers/openai-a-comprehensive-overview-and-guide
 * Everything You Need to Know about OpenAI - analyticsdrift.com : https://analyticsdrift.com/everything-you-need-to-know-about-openai/
 ```
+
+## Video demo
+
+https://github.com/user-attachments/assets/52416798-a97a-4b76-80ac-9102816f70c9
