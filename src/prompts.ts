@@ -54,6 +54,40 @@ Return JSON with:
 }`,
 });
 
+export const reflectionSchema = z.object({
+  critique: z.array(z.string()),
+  suggestions: z.array(z.string()),
+  should_iterate: z.boolean(),
+});
+
+export const reflectionPromptTemplate = new PromptTemplate({
+  schema: z.object({
+    analysis: z.string(),
+    previous_feedback: z.array(z.string()).optional(),
+  }),
+  template: `Review this competitive analysis:
+{{analysis}}
+
+{{#previous_feedback}}
+Previous feedback:
+{{previous_feedback}}
+{{/previous_feedback}}
+
+Consider:
+- Depth of competitor analysis
+- Missing key capabilities
+- Market positioning clarity
+- Evidence and sources
+- Actionable insights
+
+Return JSON:
+{
+  "critique": ["Specific issues found"],
+  "suggestions": ["Concrete improvement suggestions"],
+  "should_iterate": boolean
+}`,
+});
+
 export const summarizerInstructions = `Create a clear, concise competitive analysis that:
 - Highlights key insights
 - Provides objective observations

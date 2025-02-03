@@ -18,6 +18,9 @@ export const StateSchema = z.object({
   researchLoopCount: z.number(),
   runningSummary: z.string().optional(),
   answer: z.instanceof(BaseMessage).optional(),
+  reflectionFeedback: z.array(z.string()).optional(),
+  reflectionIteration: z.number().default(0),
+  maxReflectionIterations: z.number().default(3),
 });
 
 export type State = z.infer<typeof StateSchema>;

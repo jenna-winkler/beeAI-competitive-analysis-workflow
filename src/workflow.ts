@@ -7,6 +7,8 @@ import {
   competitorsSchema,
   categorizationPromptTemplate,
   findingsSchema,
+  reflectionPromptTemplate,
+  reflectionSchema,
 } from "./prompts.js";
 import { State, StateSchema } from "./state.js";
 import { deduplicateAndFormatSources, formatSources, tavilySearch } from "./utils.js";
@@ -17,6 +19,7 @@ export enum Steps {
   WEB_RESEARCH = "WEB_RESEARCH",
   CATEGORIZE_FINDINGS = "CATEGORIZE_FINDINGS",
   FINALIZE_SUMMARY = "FINALIZE_SUMMARY",
+  REFLECTION = "REFLECTION",
 }
 
 async function generateCompetitors(state: State) {
@@ -64,9 +67,11 @@ async function generateCompetitors(state: State) {
 }
 
 async function selectCompetitor(state: State) {
-  const unprocessedCompetitors = state.competitors.filter(
-    (comp) => !state.competitorFindings[comp] || state.competitorFindings[comp].length === 0,
-  );
+  const unprocessedCompetitors = state.competitors.filter((competitor) => {
+    return (
+      !state.competitorFindings[competitor] || state.competitorFindings[competitor].length === 0
+    );
+  });
 
   if (unprocessedCompetitors.length === 0) {
     return { next: Steps.FINALIZE_SUMMARY };
@@ -98,27 +103,37 @@ async function webResearch(state: State) {
 }
 
 async function categorizeFindings(state: State) {
+  if (!state.currentCompetitor) {
+    throw new Error("No competitor selected for analysis");
+  }
+
+  if (state.webResearchResults.length === 0) {
+    throw new Error("No research results available for analysis");
+  }
+
   const llm = getChatLLM();
   const llmJsonMode = new JsonDriver(llm);
   const result = await llmJsonMode.generate(findingsSchema, [
     BaseMessage.of({
       role: Role.SYSTEM,
       text: categorizationPromptTemplate.render({
-        competitor: state.currentCompetitor!,
-        searchResults: state.webResearchResults.at(-1)!,
+        competitor: state.currentCompetitor,
+        searchResults: state.webResearchResults[state.webResearchResults.length - 1],
       }),
     }),
   ]);
 
+  const updatedFindings = {
+    ...state.competitorFindings,
+    [state.currentCompetitor]: [
+      ...(result.parsed.key_insights || []),
+      ...(result.parsed.unique_capabilities || []),
+    ],
+  };
+
   return {
     update: {
-      competitorFindings: {
-        ...state.competitorFindings,
-        [state.currentCompetitor!]: [
-          ...(result.parsed.key_insights || []),
-          ...(result.parsed.unique_capabilities || []),
-        ],
-      },
+      competitorFindings: updatedFindings,
     },
     next: Steps.SELECT_COMPETITOR,
   };
@@ -126,10 +141,9 @@ async function categorizeFindings(state: State) {
 
 async function finalizeSummary(state: State) {
   const competitorSections = Object.entries(state.competitorFindings)
-    .map(
-      ([competitor, findings]) => `## ${competitor}
-${findings.map((insight) => `* ${insight}`).join("\n")}`,
-    )
+    .map(([competitor, findings]) => {
+      return `## ${competitor}\n${findings.map((insight) => `* ${insight}`).join("\n")}`;
+    })
     .join("\n\n");
 
   const finalSummary = `# Competitive Analysis: ${state.industry}
@@ -143,6 +157,47 @@ ${state.sourcesGathered.join("\n")}`;
 
   return {
     update: { answer: BaseMessage.of({ role: Role.ASSISTANT, text: finalSummary }) },
+    next: Steps.REFLECTION,
+  };
+}
+
+async function reflectAndImprove(state: State) {
+  if (!state.answer) {
+    throw new Error("No analysis to reflect upon");
+  }
+
+  const llm = getChatLLM();
+  const llmJsonMode = new JsonDriver(llm);
+
+  const result = await llmJsonMode.generate(reflectionSchema, [
+    BaseMessage.of({
+      role: Role.SYSTEM,
+      text: reflectionPromptTemplate.render({
+        analysis: state.answer.text,
+        previous_feedback: state.reflectionFeedback,
+      }),
+    }),
+  ]);
+
+  const feedback = [...(result.parsed.critique || []), ...(result.parsed.suggestions || [])];
+
+  if (result.parsed.should_iterate && state.reflectionIteration < state.maxReflectionIterations) {
+    return {
+      update: {
+        reflectionFeedback: feedback,
+        reflectionIteration: state.reflectionIteration + 1,
+      },
+      next: Steps.GENERATE_COMPETITORS,
+    };
+  }
+
+  const finalAnalysis = BaseMessage.of({
+    role: Role.ASSISTANT,
+    text: `${state.answer.text}\n\n## Reflection Notes\n${feedback.map((f) => `* ${f}`).join("\n")}`,
+  });
+
+  return {
+    update: { answer: finalAnalysis },
     next: Workflow.END,
   };
 }
@@ -153,4 +208,5 @@ export const workflow = new Workflow({ schema: StateSchema })
   .addStep(Steps.WEB_RESEARCH, webResearch)
   .addStep(Steps.CATEGORIZE_FINDINGS, categorizeFindings)
   .addStep(Steps.FINALIZE_SUMMARY, finalizeSummary)
+  .addStep(Steps.REFLECTION, reflectAndImprove)
   .setStart(Steps.GENERATE_COMPETITORS);

@@ -3,6 +3,7 @@ import { getEnv } from "bee-agent-framework/internals/env";
 import { State } from "./state.js";
 import { Steps } from "./workflow.js";
 import "dotenv/config";
+
 export interface SearchResult {
   url: string;
   title: string;
@@ -12,7 +13,11 @@ export interface SearchResult {
 
 export async function tavilySearch(query: string, maxResults = 3): Promise<SearchResult[]> {
   const apiKey = getEnv("TAVILY_API_KEY");
-  const tool = new TavilySearchResults({ apiKey: apiKey ?? "", maxResults });
+  if (!apiKey) {
+    throw new Error("TAVILY_API_KEY not found in environment");
+  }
+
+  const tool = new TavilySearchResults({ apiKey, maxResults });
   const response = await tool.invoke(query);
   const parsed = JSON.parse(response);
   return parsed;
@@ -24,31 +29,38 @@ export function deduplicateAndFormatSources(
   includeRawContent = false,
 ): string {
   const uniqueSources = new Map<string, SearchResult>();
+
   searchResults.forEach((result) => {
     if (!uniqueSources.has(result.url)) {
       uniqueSources.set(result.url, result);
     }
   });
 
-  let formattedText = "Sources:\n\n";
-  Array.from(uniqueSources.values()).forEach((source) => {
-    formattedText += `Source ${source.title}:\n===\n`;
-    formattedText += `URL: ${source.url}\n===\n`;
-    formattedText += `Most relevant content from source: ${source.content}\n===\n`;
+  const formattedParts: string[] = ["Sources:\n"];
 
-    if (includeRawContent) {
+  Array.from(uniqueSources.values()).forEach((source) => {
+    formattedParts.push(`Source ${source.title}:\n===`);
+    formattedParts.push(`URL: ${source.url}\n===`);
+    formattedParts.push(`Most relevant content from source: ${source.content}\n===`);
+
+    if (includeRawContent && source.raw_content) {
       const charLimit = maxTokensPerSource * 4;
-      let rawContent = source.raw_content ?? "";
+      let rawContent = source.raw_content;
+
       if (rawContent.length > charLimit) {
         rawContent = rawContent.slice(0, charLimit) + "... [truncated]";
       }
-      formattedText += `Full source content limited to ${maxTokensPerSource} tokens: ${rawContent}\n\n`;
+
+      formattedParts.push(
+        `Full source content limited to ${maxTokensPerSource} tokens: ${rawContent}\n`,
+      );
     }
   });
-  return formattedText.trim();
+
+  return formattedParts.join("\n").trim();
 }
 
-export function formatSources(results: SearchResult[]) {
+export function formatSources(results: SearchResult[]): string {
   return results.map((source) => `* ${source.title} : ${source.url}`).join("\n");
 }
 
@@ -58,33 +70,39 @@ export enum RelevantOutputType {
   ERROR = "error",
 }
 
-export function getRelevantOutput(type: RelevantOutputType, step: Steps, state: State) {
+export function getRelevantOutput(type: RelevantOutputType, step: Steps, state: State): string {
   if (type === RelevantOutputType.ERROR) {
     return "❌ An error occurred during execution.";
   }
 
   switch (step) {
-    case Steps.GENERATE_COMPETITORS:
+    case Steps.GENERATE_COMPETITORS: {
       return type === RelevantOutputType.START
         ? `Analyzing ${state.industry} industry...`
         : `Found competitors: ${state.competitors.join(", ")}`;
-    case Steps.SELECT_COMPETITOR:
+    }
+    case Steps.SELECT_COMPETITOR: {
       return type === RelevantOutputType.START
         ? "Selecting next competitor..."
         : `Analyzing: ${state.currentCompetitor}`;
-    case Steps.WEB_RESEARCH:
+    }
+    case Steps.WEB_RESEARCH: {
       return type === RelevantOutputType.START
         ? `🔎 Researching: "${state.searchQuery}"`
         : "Research complete";
-    case Steps.CATEGORIZE_FINDINGS:
+    }
+    case Steps.CATEGORIZE_FINDINGS: {
       return type === RelevantOutputType.START
         ? "Categorizing findings..."
         : "Categorization complete";
-    case Steps.FINALIZE_SUMMARY:
+    }
+    case Steps.FINALIZE_SUMMARY: {
       return type === RelevantOutputType.START
         ? "Generating final analysis..."
         : "Analysis complete";
-    default:
+    }
+    default: {
       return "";
+    }
   }
 }
