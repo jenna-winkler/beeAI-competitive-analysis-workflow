@@ -10,6 +10,7 @@ This workflow helps streamline competitive research by:
 3. Conducting Web Research: Uses the Tavily API to gather relevant data about each competitor.
 4. Categorizing Findings: Analyzes the data and categorizes the key insights.
 5. Generating a Final Report: Compiles all findings into a markdown-based summary.
+6. Reflection: Reflects on the final report and reruns workflow up to 3 times to make improvements.
 
 ```mermaid
 stateDiagram-v2
