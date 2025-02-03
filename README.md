@@ -22,13 +22,16 @@ stateDiagram-v2
     WEB_RESEARCH --> CATEGORIZE_FINDINGS
     CATEGORIZE_FINDINGS --> SELECT_COMPETITOR
     
-    FINALIZE_SUMMARY --> [*]
+    FINALIZE_SUMMARY --> REFLECTION
+    REFLECTION --> GENERATE_COMPETITORS: Needs improvement
+    REFLECTION --> [*]: Analysis complete
 
     note right of GENERATE_COMPETITORS: Get list of competitors
     note right of SELECT_COMPETITOR: Pick next competitor
     note right of WEB_RESEARCH: Search competitor info
     note right of CATEGORIZE_FINDINGS: Extract key insights
     note right of FINALIZE_SUMMARY: Create final report
+    note right of REFLECTION: Review & suggest improvements
 ```
 
 ## How to Use
